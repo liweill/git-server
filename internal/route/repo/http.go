@@ -229,7 +229,6 @@ func getInfoRefs(h serviceHandler) {
 		h.sendFile("text/plain; charset=utf-8")
 		return
 	}
-	fmt.Println("文件：", h.dir)
 	refs := gitCommand(h.dir, service, "--stateless-rpc", "--advertise-refs", ".")
 	h.w.Header().Set("Content-Type", fmt.Sprintf("application/x-git-%s-advertisement", service))
 	h.w.WriteHeader(http.StatusOK)
@@ -296,7 +295,7 @@ func getGitRepoPath(dir string) (string, error) {
 
 func HTTP(c *HTTPContext) {
 	for _, route := range routes {
-		reqPath := strings.ToLower(c.Req.URL.Path)
+		reqPath := c.Req.URL.Path
 		m := route.re.FindStringSubmatch(reqPath)
 		if m == nil {
 			continue

@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"git-server/internal/conf"
 	"path/filepath"
-	"strings"
 )
 
 type CloneLink struct {
@@ -13,11 +12,11 @@ type CloneLink struct {
 }
 
 func UserPath(user string) string {
-	return filepath.Join(conf.Repository.Root, strings.ToLower(user))
+	return filepath.Join(conf.Repository.Root, user)
 }
 
 func RepoPath(userName, repoName string) string {
-	return filepath.Join(UserPath(userName), strings.ToLower(repoName)+".git")
+	return filepath.Join(UserPath(userName), repoName+".git")
 }
 
 func FullRepoName(userName, repoName string) string {
