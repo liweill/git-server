@@ -29,10 +29,11 @@ func main() {
 			m.Get("/raw/*", repo.SingleDownload)
 		}, context.RepoAssignment(), context.RepoRef())
 		m.Group("/repo", func() {
-			m.Post("/create", bindIgnErr(form.CreateRepo{}), repo.CreatePost)
+			m.Post("/create", bindIgnErr(form.Repo{}), repo.CreatePost)
 		})
 		m.Group("/repos", func() {
 			m.Post("", bindIgnErr(form.ListRepo{}), repo.ListRepo)
+			m.Delete("", bindIgnErr(form.Repo{}), repo.DeleteRepo)
 		})
 		// ***************************
 		// ----- HTTP Git routes -----

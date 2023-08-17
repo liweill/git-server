@@ -1,7 +1,6 @@
 package repo
 
 import (
-	"fmt"
 	"git-server/internal/conf"
 	"git-server/internal/context"
 	"git-server/internal/form"
@@ -14,11 +13,9 @@ import (
 	"strings"
 )
 
-func CreatePost(c *context.Context, f form.CreateRepo) {
-	fmt.Printf("value:%+v", f)
+func CreatePost(c *context.Context, f form.Repo) {
 	repoPath := repoutil.RepoPath(f.Code, f.RepoName)
 	FullRepoName := repoutil.FullRepoName(f.Code, f.RepoName)
-	fmt.Println(repoPath)
 	if !repoExists(repoPath) {
 		err := initRepo(FullRepoName)
 		if err != nil {
@@ -45,11 +42,26 @@ func repoExists(p string) bool {
 
 func initRepo(FullRepoName string) error {
 	fullPath := path.Join(conf.Repository.Root, FullRepoName) + ".git"
-	fmt.Println(fullPath)
 	if err := exec.Command("git", "init", "--bare", fullPath).Run(); err != nil {
 		return err
 	}
 	return nil
+}
+
+func DeleteRepo(c *context.Context, f form.Repo) {
+	repoPath := repoutil.RepoPath(f.Code, f.RepoName)
+	file, err := os.Lstat(repoPath)
+	if err != nil || file == nil {
+		c.JSON(500, _type.FaildResult(err))
+		return
+	}
+	err = os.RemoveAll(repoPath)
+	if err != nil || file == nil {
+		c.JSON(500, _type.FaildResult(err))
+		return
+	}
+	repoName := repoutil.FullRepoName(f.Code, f.RepoName)
+	c.JSON(200, _type.SuccessResult(repoName))
 }
 
 func ListRepo(c *context.Context, f form.ListRepo) {

@@ -5,12 +5,12 @@ import (
 	"gopkg.in/macaron.v1"
 )
 
-type CreateRepo struct {
+type Repo struct {
 	Code     string
 	RepoName string
 }
 
-func (f *CreateRepo) Validate(ctx *macaron.Context, errs binding.Errors) binding.Errors {
+func (f *Repo) Validate(ctx *macaron.Context, errs binding.Errors) binding.Errors {
 	return validate(errs, ctx.Data, f, ctx.Locale)
 }
 
