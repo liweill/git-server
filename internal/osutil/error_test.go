@@ -10,7 +10,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	"gogs.io/gogs/internal/errutil"
+	"git-server/internal/errutil"
 )
 
 func TestError_NotFound(t *testing.T) {
