@@ -27,6 +27,11 @@ func main() {
 			m.Get("", repo.Home)
 			m.Get("/src/*", repo.Home)
 			m.Get("/raw/*", repo.SingleDownload)
+			m.Post("/_edit/*", bindIgnErr(form.EditRepoFile{}), repo.EditFilePost)
+			m.Post("/_upload/*", bindIgnErr(form.UploadRepoFile{}), repo.UploadFilePost)
+			m.Post("/upload-file", repo.UploadFileToServer)
+			m.Post("/upload-remove", bindIgnErr(form.RemoveUploadFile{}), repo.RemoveUploadFileFromServer)
+			m.Post("/_delete/*", bindIgnErr(form.DeleteRepoFile{}), repo.DeleteFilePost)
 		}, context.RepoAssignment(), context.RepoRef())
 		m.Group("/repo", func() {
 			m.Post("/create", bindIgnErr(form.Repo{}), repo.CreatePost)

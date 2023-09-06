@@ -42,9 +42,11 @@ type ServerOpts struct {
 	ExternalURL string `ini:"EXTERNAL_URL"`
 	Domain      string `ini:"DOMAIN"`
 	HTTPPort    string `ini:"HTTP_PORT"`
+	AppDataPath string `ini:"APP_DATA_PATH"`
 }
 
 type RepositoryOpts struct {
 	Root          string `ini:"ROOT"`
+	LocalPath     string `ini:"LOCAL_PATH"`
 	DefaultBranch string `ini:"DEFAULT_BRANCH"`
 }
