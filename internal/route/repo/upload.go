@@ -153,13 +153,12 @@ func UploadFilePost(c *context.Context, f form.UploadRepoFile) {
 	//	return
 	//}
 
-	//if oldBranchName != branchName {
-	//	if _, err := c.Repo.Repository.GetBranch(branchName); err == nil {
-	//		c.FormErr("NewBranchName")
-	//		c.RenderWithErr(c.Tr("repo.editor.branch_already_exists", branchName), tmplEditorUpload, &f)
-	//		return
-	//	}
-	//}
+	if oldBranchName != branchName {
+		if _, err := GetBranch(branchName, repoPath(c.Repo.RepoLink)); err == nil {
+			c.JSON(500, _type.FaildResult(errors.New("repo.editor.branch_already_exists")))
+			return
+		}
+	}
 
 	var newTreePath string
 	for _, part := range treeNames {
@@ -245,24 +244,20 @@ func UploadRepoFiles(opts UploadRepoFileOptions) error {
 	} else if err = UpdateLocalCopyBranch(opts.RepoLink, opts.OldBranch); err != nil {
 		return fmt.Errorf("update local copy branch[%s]: %v", opts.OldBranch, err)
 	}
-	fmt.Println("1111111111")
-	//if opts.OldBranch != opts.NewBranch {
-	//	if err = CheckoutNewBranch(opts.OldBranch, opts.NewBranch); err != nil {
-	//		return fmt.Errorf("checkout new branch[%s] from old branch[%s]: %v", opts.NewBranch, opts.OldBranch, err)
-	//	}
-	//}
-
 	localPath := LocalCopyPath(opts.RepoLink)
+	if opts.OldBranch != opts.NewBranch {
+		if err := CheckoutNewBranch(opts.OldBranch, opts.NewBranch, localPath); err != nil {
+			return fmt.Errorf("checkout new branch[%s] from old branch[%s]: %v", opts.NewBranch, opts.OldBranch, err)
+		}
+	}
+
 	dirPath := path.Join(localPath, opts.TreePath)
-	fmt.Println("localPath", localPath)
-	fmt.Println("dirPath", dirPath)
 	if err = os.MkdirAll(dirPath, os.ModePerm); err != nil {
 		return err
 	}
 
 	// Copy uploaded files into repository
 	for _, upload := range uploads {
-		fmt.Println("2222222222")
 		tmpPath := upload.LocalPath()
 		if !osutil.IsFile(tmpPath) {
 			continue
@@ -299,19 +294,7 @@ func UploadRepoFiles(opts UploadRepoFileOptions) error {
 	}
 
 	err = git.Push(localPath, "origin", opts.NewBranch)
-	//git.PushOptions{
-	//	CommandOptions: git.CommandOptions{
-	//		Envs: ComposeHookEnvs(ComposeHookEnvsOptions{
-	//			AuthUser:  doer,
-	//			OwnerName: repo.MustOwner().Name,
-	//			OwnerSalt: repo.MustOwner().Salt,
-	//			RepoID:    repo.ID,
-	//			RepoName:  repo.Name,
-	//			RepoPath:  repo.RepoPath(),
-	//		}),
-	//	},
-	//},
-	//)
+
 	if err != nil {
 		return fmt.Errorf("git push origin %s: %v", opts.NewBranch, err)
 	}

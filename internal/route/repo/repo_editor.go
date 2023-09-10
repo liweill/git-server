@@ -134,28 +134,28 @@ func UpdateRepoFile(opts UpdateRepoFileOptions) (err error) {
 		return fmt.Errorf("update local copy branch[%s]: %v", opts.OldBranch, err)
 	}
 
-	//repoPath := repo.RepoPath()
+	repoPath := repoPath(opts.RepoLink)
 	localPath := LocalCopyPath(opts.RepoLink)
 
-	//if opts.OldBranch != opts.NewBranch {
-	//	// Directly return error if new branch already exists in the server
-	//	if git.RepoHasBranch(repoPath, opts.NewBranch) {
-	//		return dberrors.BranchAlreadyExists{Name: opts.NewBranch}
-	//	}
-	//
-	//	// Otherwise, delete branch from local copy in case out of sync
-	//	if git.RepoHasBranch(localPath, opts.NewBranch) {
-	//		if err = git.DeleteBranch(localPath, opts.NewBranch, git.DeleteBranchOptions{
-	//			Force: true,
-	//		}); err != nil {
-	//			return fmt.Errorf("delete branch %q: %v", opts.NewBranch, err)
-	//		}
-	//	}
-	//
-	//	if err := repo.CheckoutNewBranch(opts.OldBranch, opts.NewBranch); err != nil {
-	//		return fmt.Errorf("checkout new branch[%s] from old branch[%s]: %v", opts.NewBranch, opts.OldBranch, err)
-	//	}
-	//}
+	if opts.OldBranch != opts.NewBranch {
+		// Directly return error if new branch already exists in the server
+		if git.RepoHasBranch(repoPath, opts.NewBranch) {
+			return errors.New("BranchAlreadyExists!")
+		}
+
+		// Otherwise, delete branch from local copy in case out of sync
+		if git.RepoHasBranch(localPath, opts.NewBranch) {
+			if err = git.DeleteBranch(localPath, opts.NewBranch, git.DeleteBranchOptions{
+				Force: true,
+			}); err != nil {
+				return fmt.Errorf("delete branch %q: %v", opts.NewBranch, err)
+			}
+		}
+
+		if err := CheckoutNewBranch(opts.OldBranch, opts.NewBranch, localPath); err != nil {
+			return fmt.Errorf("checkout new branch[%s] from old branch[%s]: %v", opts.NewBranch, opts.OldBranch, err)
+		}
+	}
 
 	oldFilePath := path.Join(localPath, opts.OldTreeName)
 	filePath := path.Join(localPath, opts.NewTreeName)

@@ -1,17 +1,34 @@
 package repo
 
 import (
+	"fmt"
 	"git-server/internal/conf"
 	"git-server/internal/context"
 	"git-server/internal/form"
 	"git-server/internal/repoutil"
 	"git-server/internal/type"
+	"github.com/gogs/git-module"
 	"github.com/pkg/errors"
+	"github.com/unknwon/com"
 	"os"
 	"os/exec"
 	"path"
 	"strings"
+	"time"
 )
+
+type NewBranchOpts struct {
+	OldBranch string
+	NewBranch string
+	RepoLink  string
+}
+type Branch struct {
+	RepoPath string
+	Name     string
+
+	IsProtected bool
+	Commit      *git.Commit
+}
 
 func CreatePost(c *context.Context, f form.Repo) {
 	repoPath := repoutil.RepoPath(f.Code, f.RepoName)
@@ -138,4 +155,79 @@ func GetRepos(code string) ([]string, error) {
 		}
 	}
 	return repos, nil
+}
+
+func CreateBranch(c *context.Context, f form.CreateBranch) {
+	oldBranchName := c.Repo.BranchName
+	if _, err := GetBranch(f.BranchName, repoPath(c.Repo.RepoLink)); err == nil {
+		c.JSON(500, _type.FaildResult(errors.New("repo.editor.branch_already_exists")))
+		return
+	}
+	err := NewBranch(NewBranchOpts{
+		OldBranch: oldBranchName,
+		NewBranch: f.BranchName,
+		RepoLink:  c.Repo.RepoLink,
+	})
+	if err != nil {
+		c.JSON(500, _type.FaildResult(err))
+	}
+	c.JSON(200, _type.SuccessResult("create branch success."))
+}
+func NewBranch(opts NewBranchOpts) (err error) {
+	repoWorkingPool.CheckIn(com.ToStr(opts.RepoLink))
+	defer repoWorkingPool.CheckOut(com.ToStr(opts.RepoLink))
+
+	if err := DiscardLocalRepoBranchChanges(opts.RepoLink, opts.OldBranch); err != nil {
+		return fmt.Errorf("discard local repo branch[%s] changes: %v", opts.OldBranch, err)
+	} else if err = UpdateLocalCopyBranch(opts.RepoLink, opts.OldBranch); err != nil {
+		return fmt.Errorf("update local copy branch[%s]: %v", opts.OldBranch, err)
+	}
+
+	repoPath := repoPath(opts.RepoLink)
+	localPath := LocalCopyPath(opts.RepoLink)
+	fmt.Println("opts.OldBranch", opts.OldBranch, opts.NewBranch)
+	if opts.OldBranch != opts.NewBranch {
+		// Directly return error if new branch already exists in the server
+		if git.RepoHasBranch(repoPath, opts.NewBranch) {
+			return errors.New("BranchAlreadyExists!")
+		}
+
+		// Otherwise, delete branch from local copy in case out of sync
+		if git.RepoHasBranch(localPath, opts.NewBranch) {
+			if err = git.DeleteBranch(localPath, opts.NewBranch, git.DeleteBranchOptions{
+				Force: true,
+			}); err != nil {
+				return fmt.Errorf("delete branch %q: %v", opts.NewBranch, err)
+			}
+		}
+
+		if err := CheckoutNewBranch(opts.OldBranch, opts.NewBranch, localPath); err != nil {
+			return fmt.Errorf("checkout new branch[%s] from old branch[%s]: %v", opts.NewBranch, opts.OldBranch, err)
+		}
+	}
+	err = git.Push(localPath, "origin", opts.NewBranch)
+	if err != nil {
+		return fmt.Errorf("git push origin %s: %v", opts.NewBranch, err)
+	}
+	return nil
+}
+
+func CheckoutNewBranch(oldBranch, newBranch, localPath string) error {
+	if err := git.Checkout(localPath, newBranch, git.CheckoutOptions{
+		BaseBranch: oldBranch,
+		Timeout:    time.Duration(300) * time.Second,
+	}); err != nil {
+		return fmt.Errorf("checkout [base: %s, new: %s]: %v", oldBranch, newBranch, err)
+	}
+	return nil
+}
+
+func GetBranch(name, repoPath string) (*Branch, error) {
+	if !git.RepoHasBranch(repoPath, name) {
+		return nil, errors.Errorf("branch %s does not exist", name)
+	}
+	return &Branch{
+		RepoPath: repoPath,
+		Name:     name,
+	}, nil
 }

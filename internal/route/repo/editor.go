@@ -54,13 +54,12 @@ func editFilePost(c *context.Context, f form.EditRepoFile, isNewFile bool) {
 		return
 	}
 
-	//if oldBranchName != branchName {
-	//	if _, err := c.Repo.Repository.GetBranch(branchName); err == nil {
-	//		c.FormErr("NewBranchName")
-	//		c.RenderWithErr(c.Tr("repo.editor.branch_already_exists", branchName), tmplEditorEdit, &f)
-	//		return
-	//	}
-	//}
+	if oldBranchName != branchName {
+		if _, err := GetBranch(branchName, repoPath(c.Repo.RepoLink)); err == nil {
+			c.JSON(500, _type.FaildResult(errors.New("repo.editor.branch_already_exists")))
+			return
+		}
+	}
 
 	var newTreePath string
 	for index, part := range treeNames {

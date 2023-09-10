@@ -32,6 +32,7 @@ func main() {
 			m.Post("/upload-file", repo.UploadFileToServer)
 			m.Post("/upload-remove", bindIgnErr(form.RemoveUploadFile{}), repo.RemoveUploadFileFromServer)
 			m.Post("/_delete/*", bindIgnErr(form.DeleteRepoFile{}), repo.DeleteFilePost)
+			m.Post("/createBranch", bindIgnErr(form.CreateBranch{}), repo.CreateBranch)
 		}, context.RepoAssignment(), context.RepoRef())
 		m.Group("/repo", func() {
 			m.Post("/create", bindIgnErr(form.Repo{}), repo.CreatePost)

@@ -33,13 +33,12 @@ func DeleteFilePost(c *context.Context, f form.DeleteRepoFile) {
 	c.Data["commit_choice"] = f.CommitChoice
 	c.Data["new_branch_name"] = branchName
 
-	//if oldBranchName != branchName {
-	//	if _, err := c.Repo.Repository.GetBranch(branchName); err == nil {
-	//		c.FormErr("NewBranchName")
-	//		c.RenderWithErr(c.Tr("repo.editor.branch_already_exists", branchName), tmplEditorDelete, &f)
-	//		return
-	//	}
-	//}
+	if oldBranchName != branchName {
+		if _, err := GetBranch(branchName, repoPath(c.Repo.RepoLink)); err == nil {
+			c.JSON(500, _type.FaildResult(errors.New("repo.editor.branch_already_exists")))
+			return
+		}
+	}
 
 	message := strings.TrimSpace(f.CommitSummary)
 	if message == "" {
@@ -86,13 +85,13 @@ func DeleteRepoFile(opts DeleteRepoFileOptions) (err error) {
 		return fmt.Errorf("update local copy branch[%s]: %v", opts.OldBranch, err)
 	}
 
-	//if opts.OldBranch != opts.NewBranch {
-	//	if err := repo.CheckoutNewBranch(opts.OldBranch, opts.NewBranch); err != nil {
-	//		return fmt.Errorf("checkout new branch[%s] from old branch[%s]: %v", opts.NewBranch, opts.OldBranch, err)
-	//	}
-	//}
-
 	localPath := LocalCopyPath(opts.RepoLink)
+	if opts.OldBranch != opts.NewBranch {
+		if err := CheckoutNewBranch(opts.OldBranch, opts.NewBranch, localPath); err != nil {
+			return fmt.Errorf("checkout new branch[%s] from old branch[%s]: %v", opts.NewBranch, opts.OldBranch, err)
+		}
+	}
+
 	if err = os.Remove(path.Join(localPath, opts.TreePath)); err != nil {
 		return fmt.Errorf("remove file %q: %v", opts.TreePath, err)
 	}

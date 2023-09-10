@@ -85,3 +85,11 @@ func (f *DeleteRepoFile) Validate(ctx *macaron.Context, errs binding.Errors) bin
 func (f *DeleteRepoFile) IsNewBrnach() bool {
 	return f.CommitChoice == "commit-to-new-branch"
 }
+
+type CreateBranch struct {
+	BranchName string
+}
+
+func (f *CreateBranch) Validate(ctx *macaron.Context, errs binding.Errors) binding.Errors {
+	return validate(errs, ctx.Data, f, ctx.Locale)
+}
