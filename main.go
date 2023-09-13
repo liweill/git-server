@@ -33,6 +33,7 @@ func main() {
 			m.Post("/upload-remove", bindIgnErr(form.RemoveUploadFile{}), repo.RemoveUploadFileFromServer)
 			m.Post("/_delete/*", bindIgnErr(form.DeleteRepoFile{}), repo.DeleteFilePost)
 			m.Post("/createBranch", bindIgnErr(form.CreateBranch{}), repo.CreateBranch)
+			m.Get("/commit/:sha([a-f0-9]{7,40})$", repo.Diff)
 		}, context.RepoAssignment(), context.RepoRef())
 		m.Group("/repo", func() {
 			m.Post("/create", bindIgnErr(form.Repo{}), repo.CreatePost)

@@ -15,7 +15,7 @@ func TestName(t *testing.T) {
 		log.Fatalf("init config error: %v", err)
 		os.Exit(-1)
 	}
-	fmt.Println(conf.Server)
+	fmt.Printf("%+v", conf.Git)
 }
 func TestList(t *testing.T) {
 	err := conf.Init()

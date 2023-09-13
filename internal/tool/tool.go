@@ -7,10 +7,14 @@ package tool
 import (
 	"encoding/base64"
 	"fmt"
+	"git-server/internal/conf"
 	"strings"
 	"time"
 	"unicode"
+	"unicode/utf8"
+	log "unknwon.dev/clog/v2"
 
+	"github.com/gogs/chardet"
 	"github.com/unknwon/com"
 	"github.com/unknwon/i18n"
 )
@@ -21,6 +25,23 @@ func ShortSHA1(sha1 string) string {
 		return sha1[:10]
 	}
 	return sha1
+}
+
+// DetectEncoding returns best guess of encoding of given content.
+func DetectEncoding(content []byte) (string, error) {
+	if utf8.Valid(content) {
+		log.Trace("Detected encoding: UTF-8 (fast)")
+		return "UTF-8", nil
+	}
+
+	result, err := chardet.NewTextDetector().DetectBest(content)
+	if result.Charset != "UTF-8" && len(conf.Repository.ANSICharset) > 0 {
+		log.Trace("Using default ANSICharset: %s", conf.Repository.ANSICharset)
+		return conf.Repository.ANSICharset, err
+	}
+
+	log.Trace("Detected encoding: %s", result.Charset)
+	return result.Charset, err
 }
 
 // BasicAuthDecode decodes username and password portions of HTTP Basic Authentication

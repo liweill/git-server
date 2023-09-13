@@ -26,6 +26,10 @@ func Init() error {
 	if err = inidata.Section("auth").MapTo(&Auth); err != nil {
 		return errors.Wrap(err, "mapping auth section")
 	}
+
+	if err = inidata.Section("git").MapTo(&Git); err != nil {
+		return errors.Wrap(err, "mapping auth section")
+	}
 	return nil
 }
 
@@ -33,6 +37,7 @@ var (
 	Auth       AuthOpts
 	Server     ServerOpts
 	Repository RepositoryOpts
+	Git        GitOpts
 )
 
 type AuthOpts struct {
@@ -49,4 +54,20 @@ type RepositoryOpts struct {
 	Root          string `ini:"ROOT"`
 	LocalPath     string `ini:"LOCAL_PATH"`
 	DefaultBranch string `ini:"DEFAULT_BRANCH"`
+	ANSICharset   string `ini:"ANSI_CHARSET"`
+}
+
+type GitOpts struct {
+	DisableDiffHighlight bool
+	MaxDiffFiles         int `ini:"MAX_GIT_DIFF_FILES"`
+	MaxDiffLines         int `ini:"MAX_GIT_DIFF_LINES"`
+	MaxDiffLineChars     int `ini:"MAX_GIT_DIFF_LINE_CHARACTERS"`
+	Timeout              struct {
+		Migrate int `ini:"MIGRATE"`
+		Mirror  int `ini:"MIRROR"`
+		Clone   int `ini:"CLONE"`
+		Pull    int `ini:"PULL"`
+		Diff    int `ini:"DIFF"`
+		GC      int `ini:"GC"`
+	} `ini:"git.timeout"`
 }
