@@ -7,6 +7,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"strings"
+	"time"
 
 	"git-server/internal/conf"
 )
@@ -193,15 +194,18 @@ func (c *authenticator) login2OriginOne(login, password string) (*OrginoneUserRe
 		"pwd":     password,
 	}
 	data, _ := json.Marshal(requestBody)
-	resp, err := http.Post(url, "application/json", bytes.NewBuffer(data))
+	client := &http.Client{
+		Timeout: time.Second * 10, // 设置超时时间为10秒
+	}
+	resp, err := client.Post(url, "application/json", bytes.NewBuffer(data))
 	if err != nil {
 		return nil, err
 	}
 	defer resp.Body.Close()
-	body, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		return nil, err
-	}
+	body, _ := ioutil.ReadAll(resp.Body)
+	//if err != nil {
+	//	return nil, err
+	//}
 
 	if resp.StatusCode/100 > 2 {
 		return nil, fmt.Errorf("try fetch user error: %d", resp.StatusCode)
@@ -322,10 +326,10 @@ func (authz *authorizer) fetchUserOrgAndGroups(user *UserDetail) (*OrginoneUserJ
 	}
 	defer resp.Body.Close()
 
-	body, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		return nil, err
-	}
+	body, _ := ioutil.ReadAll(resp.Body)
+	//if err != nil {
+	//	return nil, err
+	//}
 
 	if resp.StatusCode/100 > 2 {
 		return nil, fmt.Errorf("fetch user joined groups error: %d", resp.StatusCode)
