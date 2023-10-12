@@ -93,3 +93,12 @@ type CreateBranch struct {
 func (f *CreateBranch) Validate(ctx *macaron.Context, errs binding.Errors) binding.Errors {
 	return validate(errs, ctx.Data, f, ctx.Locale)
 }
+
+type ProtectedBranch struct {
+	BranchName string
+	Protected  bool
+}
+
+func (f *ProtectedBranch) Validate(ctx *macaron.Context, errs binding.Errors) binding.Errors {
+	return validate(errs, ctx.Data, f, ctx.Locale)
+}

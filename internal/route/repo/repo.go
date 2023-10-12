@@ -13,6 +13,7 @@ import (
 	"os"
 	"os/exec"
 	"path"
+	"path/filepath"
 	"strings"
 	"time"
 )
@@ -61,7 +62,10 @@ func initRepo(FullRepoName string) error {
 	fullPath := path.Join(conf.Repository.Root, FullRepoName) + ".git"
 	if err := exec.Command("git", "init", "--bare", fullPath).Run(); err != nil {
 		return err
+	} else if err = createDelegateHooks(fullPath); err != nil {
+		return fmt.Errorf("createDelegateHooks: %v", err)
 	}
+
 	return nil
 }
 
@@ -230,4 +234,23 @@ func GetBranch(name, repoPath string) (*Branch, error) {
 		RepoPath: repoPath,
 		Name:     name,
 	}, nil
+}
+
+var hooksTpls = map[git.HookName]string{
+	"pre-receive":  "#!/usr/bin/env %s\n\"%s\" hook --branch='%s' pre-receive\n",
+	"update":       "#!/usr/bin/env %s\n\"%s\" hook --config='%s' update $1 $2 $3\n",
+	"post-receive": "#!/usr/bin/env %s\n\"%s\" hook --config='%s' post-receive\n",
+}
+
+func createDelegateHooks(repoPath string) (err error) {
+	for _, name := range git.ServerSideHooks {
+		hookPath := filepath.Join(repoPath, "hooks", string(name))
+		if err = os.WriteFile(hookPath,
+			[]byte(fmt.Sprintf(hooksTpls[name], conf.Repository.ScriptType, conf.Repository.BashPath, "")),
+			os.ModePerm); err != nil {
+			return fmt.Errorf("create delegate hook '%s': %v", hookPath, err)
+		}
+		break
+	}
+	return nil
 }

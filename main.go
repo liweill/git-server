@@ -34,6 +34,8 @@ func main() {
 			m.Post("/_delete/*", bindIgnErr(form.DeleteRepoFile{}), repo.DeleteFilePost)
 			m.Post("/createBranch", bindIgnErr(form.CreateBranch{}), repo.CreateBranch)
 			m.Get("/commit/:sha([a-f0-9]{7,40})$", repo.Diff)
+			m.Combo("/setting/protectedBranch").Get(repo.SettingsProtectedBranch).
+				Post(bindIgnErr(form.ProtectedBranch{}), repo.SettingsProtectedBranchPost)
 		}, context.RepoAssignment(), context.RepoRef())
 		m.Group("/repo", func() {
 			m.Post("/create", bindIgnErr(form.Repo{}), repo.CreatePost)

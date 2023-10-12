@@ -30,10 +30,15 @@ func Init() error {
 	if err = inidata.Section("git").MapTo(&Git); err != nil {
 		return errors.Wrap(err, "mapping auth section")
 	}
+	CustomConf, err = CurDir()
+	if err != nil {
+		errors.Wrap(err, "Failed to get working directory")
+	}
 	return nil
 }
 
 var (
+	CustomConf string
 	Auth       AuthOpts
 	Server     ServerOpts
 	Repository RepositoryOpts
@@ -55,6 +60,8 @@ type RepositoryOpts struct {
 	LocalPath     string `ini:"LOCAL_PATH"`
 	DefaultBranch string `ini:"DEFAULT_BRANCH"`
 	ANSICharset   string `ini:"ANSI_CHARSET"`
+	ScriptType    string `ini:"SCRIPT_TYPE"`
+	BashPath      string `ini:"BASH_PATH"`
 }
 
 type GitOpts struct {

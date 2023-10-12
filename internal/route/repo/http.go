@@ -8,8 +8,10 @@ import (
 	"bytes"
 	"compress/gzip"
 	"fmt"
+	"git-server/internal/auth"
 	"git-server/internal/lazyregexp"
 	"git-server/internal/pathutil"
+	"git-server/internal/tool"
 	"net/http"
 	"os"
 	"os/exec"
@@ -22,9 +24,7 @@ import (
 	"gopkg.in/macaron.v1"
 	log "unknwon.dev/clog/v2"
 
-	"git-server/internal/auth"
 	"git-server/internal/conf"
-	"git-server/internal/tool"
 )
 
 type HTTPContext struct {
@@ -161,16 +161,15 @@ func serviceRPC(h serviceHandler, service string) {
 
 	var stderr bytes.Buffer
 	cmd := exec.Command("git", service, "--stateless-rpc", h.dir)
-	//if service == "receive-pack" {
-	//	cmd.Env = append(os.Environ(), db.ComposeHookEnvs(db.ComposeHookEnvsOptions{
-	//		AuthUser:  h.authUser,
-	//		OwnerName: h.ownerName,
-	//		OwnerSalt: h.ownerSalt,
-	//		RepoID:    h.repoID,
-	//		RepoName:  h.repoName,
-	//		RepoPath:  h.dir,
-	//	})...)
-	//}
+	if service == "receive-pack" {
+		cmd.Env = append(os.Environ(), ComposeHookEnvs(ComposeHookEnvsOptions{
+			OwnerName: "13684856438",
+			OwnerSalt: "8ZAgaQX2Sj",
+			RepoID:    11,
+			RepoName:  h.repoName,
+			RepoPath:  h.dir,
+		})...)
+	}
 	cmd.Dir = h.dir
 	cmd.Stdout = h.w
 	cmd.Stderr = &stderr
@@ -180,6 +179,35 @@ func serviceRPC(h serviceHandler, service string) {
 		h.w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
+}
+
+type ComposeHookEnvsOptions struct {
+	OwnerName string
+	OwnerSalt string
+	RepoID    int64
+	RepoName  string
+	RepoPath  string
+}
+
+const (
+	ENV_AUTH_USER_ID           = "GOGS_AUTH_USER_ID"
+	ENV_AUTH_USER_NAME         = "GOGS_AUTH_USER_NAME"
+	ENV_AUTH_USER_EMAIL        = "GOGS_AUTH_USER_EMAIL"
+	ENV_REPO_OWNER_NAME        = "GOGS_REPO_OWNER_NAME"
+	ENV_REPO_OWNER_SALT_MD5    = "GOGS_REPO_OWNER_SALT_MD5"
+	ENV_REPO_ID                = "GOGS_REPO_ID"
+	ENV_REPO_NAME              = "GOGS_REPO_NAME"
+	ENV_REPO_CUSTOM_HOOKS_PATH = "GOGS_REPO_CUSTOM_HOOKS_PATH"
+)
+
+func ComposeHookEnvs(opts ComposeHookEnvsOptions) []string {
+	envs := []string{
+		"SSH_ORIGINAL_COMMAND=1",
+		ENV_REPO_OWNER_NAME + "=" + opts.OwnerName,
+		ENV_REPO_NAME + "=" + opts.RepoName,
+		ENV_REPO_CUSTOM_HOOKS_PATH + "=" + filepath.Join(opts.RepoPath, "custom_hooks"),
+	}
+	return envs
 }
 
 func serviceUploadPack(h serviceHandler) {
