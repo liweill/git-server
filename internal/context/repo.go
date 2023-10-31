@@ -11,6 +11,8 @@ import (
 	_type "git-server/internal/type"
 	"github.com/gogs/git-module"
 	"net/url"
+	"os/exec"
+	"path/filepath"
 	"strings"
 
 	"gopkg.in/macaron.v1"
@@ -103,14 +105,19 @@ func RepoRef() macaron.Handler {
 
 		// Get default branch.
 		if c.Params("*") == "" {
-			refName = conf.Repository.DefaultBranch
+			repoPath := filepath.Join(conf.Repository.Root, c.Repo.RepoLink) + ".git"
+			refName, err = getDefaultBranch(repoPath)
+			if err != nil {
+				c.JSON(500, _type.FaildResult(err))
+			}
+			//refName = "master"
 			if !c.Repo.GitRepo.HasBranch(refName) {
-				branches, err := c.Repo.GitRepo.Branches()
+				_, err := c.Repo.GitRepo.Branches()
 				if err != nil {
 					c.JSON(500, _type.FaildResult(err))
 					return
 				}
-				refName = branches[0]
+				refName = conf.Repository.DefaultBranch
 			}
 			c.Repo.Commit, err = c.Repo.GitRepo.BranchCommit(refName)
 			if err != nil {
@@ -175,4 +182,19 @@ func RepoRef() macaron.Handler {
 		}
 		c.Repo.BranchName = refName
 	}
+}
+func getDefaultBranch(repoPath string) (string, error) {
+	// 设置执行命令的工作目录
+	cmd := exec.Command("git", "symbolic-ref", "HEAD")
+	cmd.Dir = repoPath
+
+	// 执行命令并获取输出结果
+	output, err := cmd.Output()
+	if err != nil {
+		return "", err
+	}
+	result := strings.Split(string(output), "/")
+	branch := result[len(result)-1]
+	branch = strings.Replace(branch, "\n", "", -1)
+	return branch, nil
 }

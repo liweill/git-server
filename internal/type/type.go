@@ -15,9 +15,8 @@ type ResultType struct {
 	Msg     string `json:"msg"`
 	Success bool   `json:"success"`
 }
-type LastCommit map[string]interface{}
 
-func ProduceLastCommit(data *git.Commit) LastCommit {
+func ProduceLastCommit(data *git.Commit) map[string]interface{} {
 	m := make(map[string]interface{})
 	m["ID"] = data.ID.String()
 	m["Author"] = data.Author

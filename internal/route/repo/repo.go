@@ -52,7 +52,21 @@ func CreatePost(c *context.Context, f form.Repo) {
 	result := _type.FaildResult(err)
 	c.JSON(500, result)
 }
+func DeletePost(c *context.Context, form form.Repo) {
+	fullPath := repoutil.RepoPath(form.Code, form.RepoName)
+	f, err := os.Lstat(fullPath)
+	if err != nil || f == nil {
+		c.JSON(500, _type.FaildResult(errors.New("repoPath is not exist")))
+		return
+	}
 
+	err = os.RemoveAll(fullPath)
+	if err != nil || f == nil {
+		c.JSON(500, _type.FaildResult(errors.New("delete repo err")))
+		return
+	}
+	c.JSON(200, _type.SuccessResult("success"))
+}
 func repoExists(p string) bool {
 	_, err := os.Stat(path.Join(p, "objects"))
 	return err == nil

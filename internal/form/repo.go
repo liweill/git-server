@@ -102,3 +102,15 @@ type ProtectedBranch struct {
 func (f *ProtectedBranch) Validate(ctx *macaron.Context, errs binding.Errors) binding.Errors {
 	return validate(errs, ctx.Data, f, ctx.Locale)
 }
+
+type PullRequest struct {
+	UserName   string
+	HeadRepo   string
+	BaseRepo   string
+	HeadBranch string
+	BaseBranch string
+}
+
+func (f *PullRequest) Validate(ctx *macaron.Context, errs binding.Errors) binding.Errors {
+	return validate(errs, ctx.Data, f, ctx.Locale)
+}

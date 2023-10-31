@@ -7,6 +7,7 @@ import (
 	"git-server/internal/context"
 	"git-server/internal/form"
 	"git-server/internal/type"
+	"github.com/gogs/git-module"
 	"io/ioutil"
 	"os"
 	"path/filepath"
@@ -20,7 +21,7 @@ func SettingsProtectedBranchPost(c *context.Context, f form.ProtectedBranch) {
 		c.JSON(500, _type.FaildResult(errors.New("branch is not exist")))
 		return
 	}
-	branches, err := getProtectedBranch(c.Repo.RepoLink)
+	branches, err := GetProtectedBranch(c)
 	if err != nil {
 		c.JSON(500, _type.FaildResult(err))
 		return
@@ -28,12 +29,13 @@ func SettingsProtectedBranchPost(c *context.Context, f form.ProtectedBranch) {
 	if f.Protected {
 		for i := 0; i < len(branches); i++ {
 			if branches[i] == branch {
-				c.JSON(500, _type.FaildResult(errors.New("The branch is protected")))
+				c.JSON(200, _type.SuccessResult("success"))
 				return
 			}
 		}
 		if err := updateProtectedBranch(c.Repo.RepoLink, f); err != nil {
 			c.JSON(500, _type.FaildResult(err))
+			return
 		}
 	} else {
 		found := false
@@ -43,26 +45,50 @@ func SettingsProtectedBranchPost(c *context.Context, f form.ProtectedBranch) {
 			}
 		}
 		if !found {
-			c.JSON(500, _type.FaildResult(errors.New("The branch no protected")))
+			c.JSON(200, _type.SuccessResult("success"))
 			return
 		} else {
 			if err := updateProtectedBranch(c.Repo.RepoLink, f); err != nil {
 				c.JSON(500, _type.FaildResult(err))
+				return
 			}
 		}
 	}
+	c.JSON(200, _type.SuccessResult("success"))
 
 }
 func SettingsProtectedBranch(c *context.Context) {
-	branches, err := getProtectedBranch(c.Repo.RepoLink)
+	branch := c.Params("*")
+	if !c.Repo.GitRepo.HasBranch(branch) {
+		c.JSON(500, _type.FaildResult(errors.New("Not Found")))
+		return
+	}
+	protectedBrnaches, err := GetProtectedBranch(c)
 	if err != nil {
 		c.JSON(500, _type.FaildResult(err))
+		return
 	}
-	c.JSON(200, _type.SuccessResult(branches))
+	type result struct {
+		Branch      string
+		IsProtected bool
+	}
+	for i := 0; i < len(protectedBrnaches); i++ {
+		if branch == protectedBrnaches[i] {
+			c.JSON(200, _type.SuccessResult(result{
+				Branch:      c.Params("*"),
+				IsProtected: true,
+			}))
+			return
+		}
+	}
+	c.JSON(200, _type.SuccessResult(result{
+		Branch:      c.Params("*"),
+		IsProtected: false,
+	}))
 }
 
-func getProtectedBranch(repoLink string) ([]string, error) {
-	repoPath := filepath.Join(conf.Repository.Root, repoLink) + ".git"
+func GetProtectedBranch(c *context.Context) ([]string, error) {
+	repoPath := filepath.Join(conf.Repository.Root, c.Repo.RepoLink) + ".git"
 	filePath := filepath.Join(repoPath, "hooks", "pre-receive")
 	// 读取文件内容
 	content, err := ioutil.ReadFile(filePath)
@@ -76,7 +102,13 @@ func getProtectedBranch(repoLink string) ([]string, error) {
 		return nil, errors.New("No match found")
 	}
 	branches := strings.Split(matches[1], ",")
-	return branches, nil
+	protectedBranches := make([]string, 0)
+	for i := 0; i < len(branches); i++ {
+		if c.Repo.GitRepo.HasBranch(branches[i]) {
+			protectedBranches = append(protectedBranches, branches[i])
+		}
+	}
+	return protectedBranches, nil
 }
 
 func updateProtectedBranch(repoLink string, f form.ProtectedBranch) error {
@@ -133,4 +165,35 @@ func updateProtectedBranch(repoLink string, f form.ProtectedBranch) error {
 	}
 
 	return nil
+}
+
+func SettingsBranches(c *context.Context) {
+	type result struct {
+		AllBranches       []string
+		ProtectedBranches []string
+		DefaultBranch     string
+	}
+	branches, err := GetProtectedBranch(c)
+	if err != nil {
+		c.JSON(500, _type.FaildResult(err))
+		return
+	}
+	c.JSON(200, _type.SuccessResult(result{
+		AllBranches:       c.Data["Branches"].([]string),
+		ProtectedBranches: branches,
+		DefaultBranch:     c.Repo.BranchName,
+	}))
+}
+func UpdateDefaultBranch(c *context.Context) {
+	branch := c.Query("branch")
+	if c.Repo.GitRepo.HasBranch(branch) &&
+		c.Repo.BranchName != branch {
+		if _, err := c.Repo.GitRepo.SymbolicRef(git.SymbolicRefOptions{
+			Ref: git.RefsHeads + branch,
+		}); err != nil {
+			c.JSON(500, _type.FaildResult(err))
+			return
+		}
+	}
+	c.JSON(200, _type.SuccessResult("success"))
 }

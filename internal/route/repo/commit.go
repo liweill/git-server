@@ -96,3 +96,74 @@ func Diff(c *context.Context) {
 	//	c.Data["BeforeRawPath"] = conf.Server.Subpath + "/" + path.Join(userName, repoName, "raw", parents[0])
 	//}
 }
+func RefCommits(c *context.Context) {
+	c.Data["PageIsViewFiles"] = true
+	switch {
+	case c.Repo.TreePath == "":
+		Commits(c)
+	case c.Repo.TreePath == "search":
+		SearchCommits(c)
+	default:
+		FileHistory(c)
+	}
+}
+func Commits(c *context.Context) {
+	renderCommits(c, "")
+}
+func renderCommits(c *context.Context, filename string) {
+	page := c.QueryInt("page")
+	if page < 1 {
+		page = 1
+	}
+	pageSize := c.QueryInt("pageSize")
+	if pageSize < 1 {
+		pageSize = 5
+	}
+
+	commits, err := c.Repo.Commit.CommitsByPage(page, pageSize, git.CommitsByPageOptions{Path: filename})
+	if err != nil {
+		c.JSON(500, _type.FaildResult(errors.New("paging commits")))
+		return
+	}
+
+	commits = RenderIssueLinks(commits, c.Repo.RepoLink)
+	type Commit map[string]interface{}
+	Commits := make([]Commit, 0)
+	for i := 0; i < len(commits); i++ {
+		Commits = append(Commits, _type.ProduceLastCommit(commits[i]))
+	}
+	c.JSON(200, _type.SuccessResult(Commits))
+
+}
+
+// TODO(unknwon)
+func RenderIssueLinks(oldCommits []*git.Commit, _ string) []*git.Commit {
+	return oldCommits
+}
+
+func SearchCommits(c *context.Context) {
+	c.Data["PageIsCommits"] = true
+
+	keyword := c.Query("q")
+	if keyword == "" {
+		c.Redirect(c.Repo.RepoLink + "/commits/" + c.Repo.BranchName)
+		return
+	}
+
+	commits, err := c.Repo.Commit.SearchCommits(keyword)
+	if err != nil {
+		c.JSON(500, _type.FaildResult(errors.New("search commits")))
+		return
+	}
+	commits = RenderIssueLinks(commits, c.Repo.RepoLink)
+	type Commit map[string]interface{}
+	Commits := make([]Commit, 0)
+	for i := 0; i < len(commits); i++ {
+		Commits = append(Commits, _type.ProduceLastCommit(commits[i]))
+	}
+	c.JSON(200, _type.SuccessResult(Commits))
+
+}
+func FileHistory(c *context.Context) {
+	renderCommits(c, c.Repo.TreePath)
+}

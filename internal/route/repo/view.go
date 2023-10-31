@@ -47,10 +47,12 @@ func renderDirectory(c *context.Context, treeLink string) {
 	}
 	c.Data["LatestCommit"] = latestCommit
 	res := struct {
+		DefaultBranch   string
 		Branchs         []string
 		LatestCommit    map[string]interface{}
 		EntryCommitInfo []_type.EntryCommitInfo
 	}{
+		DefaultBranch:   c.Repo.BranchName,
 		Branchs:         c.Data["Branches"].([]string),
 		LatestCommit:    _type.ProduceLastCommit(latestCommit),
 		EntryCommitInfo: _type.ProduceEntryCommitInfo(data),
