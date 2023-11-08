@@ -1,6 +1,7 @@
 package doc
 
 import (
+	"fmt"
 	"git-server/internal/auth"
 	"git-server/internal/conf"
 	"git-server/internal/context"
@@ -28,6 +29,7 @@ func runWeb(c *cli.Context) error {
 		os.Exit(-1)
 	}
 	auth.Init()
+	fmt.Println(conf.AppPath())
 	m := macaron.Classic()
 	bindIgnErr := binding.BindIgnErr
 	m.Use(macaron.Renderer())
