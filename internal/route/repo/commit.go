@@ -9,6 +9,7 @@ import (
 	"git-server/internal/tool"
 	"git-server/internal/type"
 	"github.com/gogs/git-module"
+	"path"
 	"time"
 )
 
@@ -80,13 +81,15 @@ func Diff(c *context.Context) {
 	c.Data["Parents"] = parents
 	c.Data["DiffNotAvailable"] = diff.NumFiles() == 0
 	data := struct {
-		Commit  map[string]interface{}
-		Diff    *DiffInfo
-		Parents []string
+		Commit     map[string]interface{}
+		Diff       *DiffInfo
+		Parents    []string
+		SourcePath string
 	}{
-		Commit:  _type.ProduceLastCommit(commit),
-		Diff:    diffInfo,
-		Parents: parents,
+		Commit:     _type.ProduceLastCommit(commit),
+		Diff:       diffInfo,
+		Parents:    parents,
+		SourcePath: conf.Server.ExternalURL + path.Join(c.Repo.RepoLink, "raw", commitID),
 	}
 	c.JSON(200, _type.SuccessResult(data))
 	//c.Data["SourcePath"] = conf.Server.Subpath + "/" + path.Join(userName, repoName, "src", commitID)

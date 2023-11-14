@@ -8,6 +8,7 @@ import (
 	"git-server/internal/form"
 	"git-server/internal/type"
 	"github.com/gogs/git-module"
+	"github.com/unknwon/com"
 	"io/ioutil"
 	"os"
 	"path/filepath"
@@ -90,6 +91,10 @@ func SettingsProtectedBranch(c *context.Context) {
 func GetProtectedBranch(c *context.Context) ([]string, error) {
 	repoPath := filepath.Join(conf.Repository.Root, c.Repo.RepoLink) + ".git"
 	filePath := filepath.Join(repoPath, "hooks", "pre-receive")
+
+	repoWorkingPool.CheckIn(com.ToStr(filePath))
+	defer repoWorkingPool.CheckOut(com.ToStr(filePath))
+
 	// 读取文件内容
 	content, err := ioutil.ReadFile(filePath)
 	if err != nil {
@@ -114,6 +119,10 @@ func GetProtectedBranch(c *context.Context) ([]string, error) {
 func updateProtectedBranch(repoLink string, f form.ProtectedBranch) error {
 	repoPath := filepath.Join(conf.Repository.Root, repoLink) + ".git"
 	filePath := filepath.Join(repoPath, "hooks", "pre-receive")
+
+	repoWorkingPool.CheckIn(com.ToStr(filePath))
+	defer repoWorkingPool.CheckOut(com.ToStr(filePath))
+
 	// 打开文件
 	file, err := os.OpenFile(filePath, os.O_RDWR, 0644)
 	if err != nil {

@@ -104,11 +104,14 @@ func (f *ProtectedBranch) Validate(ctx *macaron.Context, errs binding.Errors) bi
 }
 
 type PullRequest struct {
-	UserName   string
-	HeadRepo   string
-	BaseRepo   string
-	HeadBranch string
-	BaseBranch string
+	UserName      string
+	HeadRepo      string
+	BaseRepo      string
+	HeadBranch    string
+	BaseBranch    string
+	MergeBase     string
+	MergeCommitId string
+	HasMerged     bool
 }
 
 func (f *PullRequest) Validate(ctx *macaron.Context, errs binding.Errors) binding.Errors {

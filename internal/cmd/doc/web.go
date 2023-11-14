@@ -50,14 +50,17 @@ func runWeb(c *cli.Context) error {
 			m.Group("", func() {
 				m.Get("/commit/:sha([a-f0-9]{7,40})$", repo.Diff)
 				m.Get("/compare/:before\\.\\.\\.:after", repo.CompareAndPullRequest)
+				m.Post("/compare/:before\\.\\.\\.:after", repo.CompareAndPullRequestPost)
 			})
 			m.Group("/branches", func() {
 				m.Get("", repo.Branches)
 				m.Get("/all", repo.AllBranches)
 			})
-			m.Group("/pulls/", func() {
-				m.Get("/commits", context.RepoRef(), repo.ViewPullCommits)
+			m.Group("/pulls", func() {
+				m.Post("/commits", bindIgnErr(form.PullRequest{}), repo.ViewPullCommits)
 				m.Post("/merge", bindIgnErr(form.PullRequest{}), repo.MergePullRequest)
+				m.Post("/files", bindIgnErr(form.PullRequest{}), repo.ViewPullFiles)
+				m.Post("", bindIgnErr(form.PullRequest{}), repo.PrepareViewPullInfo)
 			})
 			m.Group("/settings", func() {
 				m.Group("/branches", func() {
