@@ -104,7 +104,9 @@ func (f *ProtectedBranch) Validate(ctx *macaron.Context, errs binding.Errors) bi
 }
 
 type PullRequest struct {
+	IssueId       int
 	UserName      string
+	Status        int
 	HeadRepo      string
 	BaseRepo      string
 	HeadBranch    string
@@ -112,8 +114,18 @@ type PullRequest struct {
 	MergeBase     string
 	MergeCommitId string
 	HasMerged     bool
+	IsClosed      bool
 }
 
 func (f *PullRequest) Validate(ctx *macaron.Context, errs binding.Errors) binding.Errors {
+	return validate(errs, ctx.Data, f, ctx.Locale)
+}
+
+type MergePullRequest struct {
+	Pull  PullRequest
+	Pulls []PullRequest
+}
+
+func (f *MergePullRequest) Validate(ctx *macaron.Context, errs binding.Errors) binding.Errors {
 	return validate(errs, ctx.Data, f, ctx.Locale)
 }

@@ -42,18 +42,37 @@ type NumInfo struct {
 	NumFiles   int
 }
 
-func MergePullRequest(c *context.Context, f form.PullRequest) {
+func MergePullRequest(c *context.Context, f form.MergePullRequest) {
 	var (
 		MergedCommitID string
 		err            error
 	)
-	if MergedCommitID, err = Merge(f, c.Repo.GitRepo, MergeStyle(c.Query("merge_style")), c.Query("commit_description")); err != nil {
+	if MergedCommitID, err = Merge(f.Pull, c.Repo.GitRepo, MergeStyle(c.Query("merge_style")), c.Query("commit_description")); err != nil {
 		c.JSON(500, _type.FaildResult(err))
 		return
 	}
-	f.MergeCommitId = MergedCommitID
-	f.HasMerged = true
+	err = checkAndUpdateStatus(&f)
+	if err != nil {
+		c.JSON(500, errors.Errorf("checkAndUpdateStatus err:%v", err))
+	}
+	f.Pull.MergeCommitId = MergedCommitID
+	f.Pull.HasMerged = true
+	f.Pull.IsClosed = true
 	c.JSON(200, _type.SuccessResult(f))
+}
+func checkAndUpdateStatus(f *form.MergePullRequest) error {
+	for i := 0; i < len(f.Pulls); i++ {
+		status, err := testPatch(f.Pulls[i].IssueId, f.Pulls[i].BaseRepo, f.Pulls[i].BaseBranch)
+		if err != nil {
+			return err
+		}
+		// No conflict appears after test means mergeable.
+		if status == PULL_REQUEST_STATUS_CHECKING {
+			status = PULL_REQUEST_STATUS_MERGEABLE
+		}
+		f.Pulls[i].Status = int(status)
+	}
+	return nil
 }
 func Merge(f form.PullRequest, baseGitRepo *git.Repository, mergeStyle MergeStyle, commitDescription string) (string, error) {
 	headRepoPath := filepath.Join(conf.Repository.Root, f.HeadRepo) + ".git"
@@ -458,6 +477,7 @@ func CompareAndPullRequestPost(c *context.Context) {
 	type info struct {
 		MergeBase string
 		Status    int
+		IssueId   int
 	}
 	baseBranch := c.Params("before")
 	if err != nil {
@@ -490,6 +510,7 @@ func CompareAndPullRequestPost(c *context.Context) {
 	c.JSON(200, _type.SuccessResult(info{
 		MergeBase: MergeBase,
 		Status:    int(status),
+		IssueId:   index,
 	}))
 }
 func getIndex(c *context.Context) (int, error) {
@@ -743,4 +764,10 @@ func ViewPullFiles(c *context.Context, f form.PullRequest) {
 	//
 	//c.Data["RequireHighlightJS"] = true
 	//c.Success(PULL_FILES)
+}
+func MM(c *context.Context, f form.MergePullRequest) {
+	fmt.Printf("ss:%+v\n", f.Pull)
+	for i := 0; i < len(f.Pulls); i++ {
+		fmt.Printf("ss:%+v\n", f.Pulls[i])
+	}
 }

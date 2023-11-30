@@ -58,9 +58,10 @@ func runWeb(c *cli.Context) error {
 			})
 			m.Group("/pulls", func() {
 				m.Post("/commits", bindIgnErr(form.PullRequest{}), repo.ViewPullCommits)
-				m.Post("/merge", bindIgnErr(form.PullRequest{}), repo.MergePullRequest)
+				m.Post("/merge", bindIgnErr(form.MergePullRequest{}), repo.MergePullRequest)
 				m.Post("/files", bindIgnErr(form.PullRequest{}), repo.ViewPullFiles)
 				m.Post("", bindIgnErr(form.PullRequest{}), repo.PrepareViewPullInfo)
+				m.Post("/mm", bindIgnErr(form.MergePullRequest{}), repo.MM)
 			})
 			m.Group("/settings", func() {
 				m.Group("/branches", func() {

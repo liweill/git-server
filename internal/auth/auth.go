@@ -188,10 +188,14 @@ func (c *authenticator) Authenticate(Username, Password string) (user *UserDetai
 
 func (c *authenticator) login2OriginOne(login, password string) (*OrginoneUserResp, error) {
 
-	url := c.APIEndpoint + "/orginone/kernel/rest/login"
-	requestBody := map[string]string{
-		"account": login,
-		"pwd":     password,
+	url := c.APIEndpoint + "/orginone/kernel/rest/auth"
+	requestBody := map[string]interface{}{
+		"action": "Login",
+		"module": "auth",
+		"params": map[string]interface{}{
+			"account":  login,
+			"password": password,
+		},
 	}
 	data, _ := json.Marshal(requestBody)
 	client := &http.Client{

@@ -78,12 +78,12 @@ func HTTPContexter() macaron.Handler {
 		if err == nil && authUser.FullName != "" {
 			// authorize
 			if flag, _ := auth.Authorizer.Authorize(authUser, ownerName); !flag {
-				c.Status(http.StatusInternalServerError)
+				c.Status(http.StatusUnauthorized)
 				log.Error("Failed to authenticate user [name: %s]: %v", authUsername, err)
 				return
 			}
 		} else {
-			c.Status(http.StatusInternalServerError)
+			c.Status(http.StatusUnauthorized)
 			log.Error("Failed to authenticate user [name: %s]: %v", authUsername, err)
 			return
 		}
